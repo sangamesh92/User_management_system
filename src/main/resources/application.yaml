@@ -1,0 +1,21 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://bilalhayat1:axR1Is5KHEIxqbzq@cluster0.p1znd.mongodb.net/employee_assignment_db
+      database: employee_assignment_db
+      auto-index-creation: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: the.santas.secret.mail@gmail.com
+    password: rqfv nadk ozxh kiay
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: 8000

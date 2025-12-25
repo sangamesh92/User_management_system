@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HG Infotech – Secret Santa</title>
+
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f8;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        table thead {
+            background: #2c3e50;
+            color: white;
+        }
+
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1a252f;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        /* Gift Card */
+        .gift-wrapper {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .gift-card {
+            padding: 40px;
+            font-size: 22px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.5s ease;
+        }
+
+        .gift-card.opened {
+            background: linear-gradient(135deg, #2e7d32, #66bb6a);
+            transform: scale(1.05);
+        }
+
+        .error {
+            background: #fdecea;
+            padding: 12px;
+            border-left: 4px solid #d32f2f;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .success {
+            background: #e8f5e9;
+            padding: 12px;
+            border-left: 4px solid #2e7d32;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+
+        .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #ddd;
+        border-top: 4px solid #2c3e50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: auto;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <button onclick="logout()" style="float:right;">Logout</button>
+
+    <h1 style="text-align:center; margin-bottom:5px;">
+        🎄 Secret Santa Control Panel
+    </h1>
+
+    <p style="text-align:center; color:#555; margin-bottom:40px;">
+        Create joy, surprises, and festive memories – one gift at a time 🎁
+    </p>
+
+
+    <!-- ADD EMPLOYEE -->
+    <div class="section">
+        <h2>👥 Add Participants</h2>
+        <p style="color:#555; margin-bottom:15px;">
+            Add employees who wish to participate in the Secret Santa celebration.
+            Once added, they’ll be eligible for random gift assignment.
+        </p>
+
+        <p id="participantCount" style="color:#d32f2f; font-weight:bold; margin-bottom:10px;">
+            Participants remaining: --
+        </p>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Employee Name</th>
+                <th>Email</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td><input id="name" placeholder="Enter name" required></td>
+                <td><input id="email" placeholder="Enter email" type="email" required></td>
+                <td><button onclick="addEmployee()">Add</button></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SELECT EMPLOYEE -->
+    <div class="section">
+        <h2>🎁 Assign Secret Santa</h2>
+        <p style="color:#555; margin-bottom:15px;">
+            Select an employee and let the magic happen!
+            A surprise recipient will be assigned — secretly 🤫
+        </p>
+
+
+        <table>
+            <thead>
+            <tr>
+                <th>Select Employee</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>
+                    <select id="employeeDropdown"></select>
+                </td>
+                <td>
+                    <button id="submitBtn" onclick="assign()">Submit</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <p style="color:#777; font-size:14px; margin-top:10px;">
+            ℹ️ Each employee can participate only once.
+            Assignments are final and kept confidential.
+        </p>
+
+
+        <div id="addError" class="error" style="display:none;"></div>
+
+        <!-- LOADING -->
+        <div id="loadingBox" style="display:none; text-align:center; margin-top:20px;">
+            <div class="spinner"></div>
+            <p id="loadingText" style="margin-top:10px; font-weight:bold; color:#2c3e50;">
+                Please be patient...
+            </p>
+        </div>
+
+        <!-- GIFT CARD -->
+        <div class="gift-wrapper" id="giftWrapper">
+            <div id="giftCard" class="gift-card">
+                🎁 Secret Santa Gift
+            </div>
+            <button style="margin-top:15px;" onclick="openGift()">Open Gift</button>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+    if (sessionStorage.getItem("adminLoggedIn") !== "true") {
+
+    window.location.href = "login.html";
+ }
+
+ const loadingMessages = [
+     "Please be patient...",
+     "Your Secret Santa is being prepared...",
+     "Wrapping your surprise 🎁...",
+     "Almost there..."
+ ];
+
+ let loadingInterval;
+
+ let assignedName = "";
+
+     async function loadEmployees() {
+        const dropdown = document.getElementById('employeeDropdown');
+        const countLabel = document.getElementById('participantCount');
+
+        // Fetch all employees (total)
+        const allRes = await fetch('/api/employees');
+        const allEmployees = await allRes.json();
+
+        // Fetch available employees (remaining)
+        const availRes = await fetch('/api/available-employees');
+        const availableEmployees = await availRes.json();
+
+        dropdown.innerHTML = '';
+
+        // Update count text
+        countLabel.innerText =
+            `Participants remaining: ${availableEmployees.length} / ${allEmployees.length}`;
+
+        if (availableEmployees.length === 0) {
+            dropdown.innerHTML = `<option>No employees available</option>`;
+            document.getElementById('submitBtn').disabled = true;
+            return;
+        }
+
+        document.getElementById('submitBtn').disabled = false;
+
+        availableEmployees.forEach(e => {
+            dropdown.innerHTML += `<option value="${e.id}">${e.name}</option>`;
+        });
+    }
+
+
+
+    async function addEmployee() {
+    const messageDiv = document.getElementById('addError');
+    messageDiv.style.display = 'none';
+
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+
+    if (!name || !email) {
+        messageDiv.className = 'error';
+        messageDiv.style.display = 'block';
+        messageDiv.innerText = "Name and Email are required";
+        return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        messageDiv.className = 'error';
+        messageDiv.style.display = 'block';
+        messageDiv.innerText = "Please enter a valid email address";
+        return;
+    }
+
+    const res = await fetch('/api/employees', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name, email })
+    });
+
+    if (!res.ok) {
+        const msg = await res.text();
+        messageDiv.className = 'error';
+        messageDiv.style.display = 'block';
+        messageDiv.innerText = msg;
+        return;
+    }
+
+    // ✅ SUCCESS
+    messageDiv.className = 'success';
+    messageDiv.style.display = 'block';
+    messageDiv.innerText = `${name} added successfully`;
+
+    document.getElementById('name').value = '';
+    document.getElementById('email').value = '';
+
+    loadEmployees();
+}
+
+
+
+async function assign() {
+     const id = document.getElementById('employeeDropdown').value;
+     const errorDiv = document.getElementById('addError');
+     const giftWrapper = document.getElementById('giftWrapper');
+     const loadingBox = document.getElementById('loadingBox');
+     const loadingText = document.getElementById('loadingText');
+     const submitBtn = document.getElementById('submitBtn');
+
+     errorDiv.style.display = 'none';
+     giftWrapper.style.display = 'none';
+
+     // 🔄 Show loading
+     loadingBox.style.display = 'block';
+     submitBtn.disabled = true;
+
+     const messages = [
+         "Please be patient...",
+         "Your Secret Santa is getting ready...",
+         "Wrapping your surprise 🎁..."
+     ];
+
+     let index = 0;
+     loadingText.innerText = messages[index];
+
+     const interval = setInterval(() => {
+         index = (index + 1) % messages.length;
+         loadingText.innerText = messages[index];
+     }, 1000);
+
+     // ⏳ FORCE 3 SECOND WAIT
+     setTimeout(async () => {
+         clearInterval(interval);
+
+         try {
+             const res = await fetch(`/api/assign/${id}`, { method: 'POST' });
+
+             if (!res.ok) {
+                 const msg = await res.text();
+                 throw new Error(msg);
+             }
+
+             const data = await res.json();
+             assignedName = data.assignedEmployeeName;
+
+             giftWrapper.style.display = 'block';
+
+         } catch (err) {
+             errorDiv.className = 'error';
+             errorDiv.style.display = 'block';
+             errorDiv.innerText = err.message;
+             submitBtn.disabled = false;
+         } finally {
+             loadingBox.style.display = 'none';
+         }
+     }, 3000); // ✅ 3 seconds
+ }
+
+
+ function openGift() {
+     const card = document.getElementById('giftCard');
+     card.classList.add('opened');
+     card.innerText = "🎉 You are the Secret Santa for: " + assignedName;
+ }
+
+function logout() {
+    sessionStorage.removeItem("adminLoggedIn");
+    window.location.href = "login.html";
+}
+
+ loadEmployees();
+</script>
+
+</body>
+</html>
